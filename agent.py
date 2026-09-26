@@ -6,7 +6,6 @@ CLARITY_TOKEN = os.environ.get("CLARITY_TOKEN")
 SLACK_WEBHOOK = os.environ.get("SLACK_WEBHOOK_URL")
 
 def fetch_clarity_data():
-    # Fetches live insights for the last 24 hours
     url = "https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=1"
     headers = {
         "Authorization": f"Bearer {CLARITY_TOKEN}",
@@ -18,8 +17,11 @@ def fetch_clarity_data():
     return response.json()
 
 def send_to_slack(data):
-    # Format the message for Slack. You can customize this to parse specific metrics 
-    # like sessions, clicks, or scroll depth, from the returned JSON.
+    # Truncate the JSON to avoid hitting Slack's 3000 character block limit
+    raw_data_string = json.dumps(data, indent=2)
+    if len(raw_data_string) > 2800:
+        raw_data_string = raw_data_string[:2800] + "\n... [Data Truncated]"
+
     message = {
         "blocks": [
             {
@@ -33,13 +35,20 @@ def send_to_slack(data):
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*Raw Insights Data (Last 24h):*\n```\n{json.dumps(data, indent=2)}\n```"
+                    "text": f"*Raw Insights Data (Last 24h):*\n```\n{raw_data_string}\n```"
                 }
             }
         ]
     }
     
-    requests.post(SLACK_WEBHOOK, json=message)
+    response = requests.post(SLACK_WEBHOOK, json=message)
+    
+    # Print the response from Slack to the GitHub logs for debugging
+    print(f"Slack Response Code: {response.status_code}")
+    print(f"Slack Response Body: {response.text}")
+    
+    # This ensures the GitHub Action fails (turns red) if Slack rejects the message
+    response.raise_for_status()
 
 if __name__ == "__main__":
     print("Fetching data from Clarity...")
