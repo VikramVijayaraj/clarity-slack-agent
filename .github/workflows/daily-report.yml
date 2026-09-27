@@ -2,8 +2,8 @@ name: Daily Clarity Reporter
 
 on:
   schedule:
-    # Runs at 9:00 AM IST (3:30 AM UTC) every day
-    - cron: '30 3 * * *'
+    # Runs at 3:17 AM UTC (8:47 AM IST) to avoid GitHub's server rush
+    - cron: '17 3 * * *'
   workflow_dispatch: # Allows you to run it manually by clicking a button
 
 jobs:
